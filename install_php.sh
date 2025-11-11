@@ -34,7 +34,6 @@ apache_install() {
         fi
 }
 
-
 php_install() {
 
         php_path="/usr/bin/php"
@@ -80,4 +79,5 @@ update
 apache_install
 php_install
 php_package_install
+
 
