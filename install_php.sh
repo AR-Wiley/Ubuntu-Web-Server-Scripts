@@ -1,61 +1,86 @@
 #!/bin/bash
 
-update() {
+set -euo pipefail
 
-        echo "Installing Update"
+if [[ $EUID -ne 0 ]]; then
+        echo "This script must be run as root" >&2
+        exit 1
+fi
 
-        if ! sudo apt update; then
-                echo "Update Failed"
-                exit 1
+function validate_log_path {
+
+        dir="/var/log/Install_Logs"
+
+        if [ ! -d "$dir" ]; then
+                echo "Creating directory: $dir"
+                mkdir -v "$dir"
         fi
-
-        echo "Updated Completed"
-
-        echo "Installing Upgrade"
-
-        if ! sudo apt upgrade -y; then
-                echo "upgrade failed"
-                exit 1
-        fi
-
-        echo "Upgrade Completed"
 
 }
 
-apache_install() {
+function validate_log_file {
 
-        apache_path="/usr/sbin/apache2"
+        file="/var/log/Install_Logs/install"
 
-        if [[ ! -x "$apache_path" ]]; then
-                echo "Apache not found. Running installer script..."
-                /home/install_apach.sh
-        else
-                echo "Apache found and installed at $apache_path"
+        if [ ! -e "$file" ]; then
+                echo "Creating file: $file"
+                touch "$file"
         fi
+
 }
 
-php_install() {
+function run_updates {
 
-        php_path="/usr/bin/php"
+        file="/var/log/Install_Logs/install"
 
-        if [[ -x $php_path ]]; then
-                echo "PHP is installed"
-                php --verion
+        timestamp=$(date +"%Y-%m-%d")
+
+        updates=("apt-get update"
+                "apt-get upgrade -y"
+                "apt-get dist-upgrade -y"
+                "apt-get clean"
+                "apt-get autoremove -y")
+
+        for i in "${updates[@]}"; do
+                if ! eval "$i"; then
+                        echo "$timestamp - '$i' Failed" >> "$file"
+                        exit 1
+                else
+                        echo "$timestamp - '$i' Success" >> "$file"
+                fi
+        done
+
+}
+
+function install_php {
+
+        file="/var/log/Install_Logs/install"
+
+        timestamp=$(date +"%Y-%m-%d")
+
+        if command -v php >/dev/null 2>&1; then
+                echo "PHP is installed..."
+                php --version
         else
-                echo "Installing PHP..."
-                if ! suod apt install php -y; then
-                        echo "PHP Installation Failed!"
+                echo "Installing PHP..." >> "$file"
+
+                if ! apt install php -y --no-install-recommends php-cli php-fpm php-common; then
+                        echo "$timestamp - PHP Installation Failed..." >> "$file"
                         exit 1
                 fi
 
-                echo "PHP has been installed"
-                php --version
+                echo "$timestamp - PHP has been installed..." >> "$file"
+                php --version >> "$file"
         fi
 }
 
-php_package_install() {
+function install_php_packages {
 
-        packages=("php-cli" "php-cgi" "php-mysql" "php-pgsql")
+        file="/var/log/Install_Logs/install"
+
+        timestamp=$(date +"%Y-%m-%d")
+
+        packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
 
         for i in "${packages[@]}"; do
 
@@ -64,20 +89,54 @@ php_package_install() {
                 if dpkg -s "$i" &>/dev/null; then
                         echo "$i is already installed."
                 else
-                        echo "$i is not installed. Installing..."
-                        if sudo apt install "i" -y; then
-                                echo "$i has been installed"
+                        echo "$timestamp - $i is not installed. Installing..." >> "$file"
+                        if sudo apt install "$i" -y; then
+                                echo "$timestamp - $i has been installed" >> "$file"
                         else
-                                echo "Failed to installe $i."
+                                echo "$timestamp - Failed to install $i." >> "$file"
                                 exit
                         fi
                 fi
         done
+
 }
 
-update
-apache_install
-php_install
-php_package_install
+function verify_php_fpm {
 
+        if systemctl is-active --quiet php*-fpm; then
+                echo "PHP is running..."
+        else
+                systemctl start php*-fpm
+                echo "PHP has started..."
+                systemctl enable php*-fpm
+                echo "PHP is enabled..."
+                systemctl status php*-fpm
+        fi
+
+}
+
+function verfiy_php_modules {
+
+        packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
+
+        for i in "${packages[@]}"; do
+
+                echo "Checking $i module..."
+
+                if php -m | grep -q -i "$i"; then
+                        echo "$i module is loaded..."
+                else
+                        echo "Module not found... Installing..."
+                        apt install -y "$i"
+                fi
+        done
+}
+
+validate_log_path
+validate_log_file
+run_updates
+install_php
+install_php_packages
+verify_php_fpm 
+verfiy_php_modules
 
