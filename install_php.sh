@@ -7,9 +7,14 @@ if [[ $EUID -ne 0 ]]; then
         exit 1
 fi
 
-function validate_log_path {
+dir="/var/log/Install_Logs"
+file="/var/log/Install_Logs/install"
+timestamp=$(date +"%Y-%m-%d")
 
-        dir="/var/log/Install_Logs"
+packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
+updates=("apt-get update" "apt-get upgrade -y" "apt-get dist-upgrade -y" "apt-get clean" "apt-get autoremove -y")
+
+function validate_log_path {
 
         if [ ! -d "$dir" ]; then
                 echo "Creating directory: $dir"
@@ -20,8 +25,6 @@ function validate_log_path {
 
 function validate_log_file {
 
-        file="/var/log/Install_Logs/install"
-
         if [ ! -e "$file" ]; then
                 echo "Creating file: $file"
                 touch "$file"
@@ -31,32 +34,17 @@ function validate_log_file {
 
 function run_updates {
 
-        file="/var/log/Install_Logs/install"
-
-        timestamp=$(date +"%Y-%m-%d")
-
-        updates=("apt-get update"
-                "apt-get upgrade -y"
-                "apt-get dist-upgrade -y"
-                "apt-get clean"
-                "apt-get autoremove -y")
-
         for i in "${updates[@]}"; do
-                if ! eval "$i"; then
+                if ! bash -c "$i"; then
                         echo "$timestamp - '$i' Failed" >> "$file"
                         exit 1
                 else
                         echo "$timestamp - '$i' Success" >> "$file"
                 fi
         done
-
 }
 
 function install_php {
-
-        file="/var/log/Install_Logs/install"
-
-        timestamp=$(date +"%Y-%m-%d")
 
         if command -v php >/dev/null 2>&1; then
                 echo "PHP is installed..."
@@ -72,15 +60,10 @@ function install_php {
                 echo "$timestamp - PHP has been installed..." >> "$file"
                 php --version >> "$file"
         fi
+
 }
 
 function install_php_packages {
-
-        file="/var/log/Install_Logs/install"
-
-        timestamp=$(date +"%Y-%m-%d")
-
-        packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
 
         for i in "${packages[@]}"; do
 
@@ -94,7 +77,7 @@ function install_php_packages {
                                 echo "$timestamp - $i has been installed" >> "$file"
                         else
                                 echo "$timestamp - Failed to install $i." >> "$file"
-                                exit
+                                exit 1
                         fi
                 fi
         done
@@ -116,8 +99,6 @@ function verify_php_fpm {
 }
 
 function verfiy_php_modules {
-
-        packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
 
         for i in "${packages[@]}"; do
 
