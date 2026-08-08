@@ -27,7 +27,6 @@ function Validate_File_Path {
         fi
 }
 
-
 function Avail_Memory {
 
         AVAIL=$(free -m | awk 'NR==2 {print $7}')
