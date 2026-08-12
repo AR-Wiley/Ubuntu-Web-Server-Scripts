@@ -6,7 +6,6 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 path="/etc/default/useradd"
-
 values=('HOME' 'INACTIVE' 'EXPIRE' 'SKEL' 'CREATE_MAIL_SPOOL')
 
 declare -A configs=(
@@ -17,12 +16,14 @@ declare -A configs=(
         [CREATE_MAIL_SPOOL]="yes"
 )
 
-for i in "${values[@]}"; do
+function update_user_configs {
+       
+        for i in "${values[@]}"; do
 
-        if grep -q "^${i}" "$path"; then
-                sed -i "s/^\(${i}[[:space:]]*\).*/\1 ${configs[$i]}/" "$path"
-        else
-                echo "${i} ${configs[$i]}" >> "$path"
-        fi
-done
-
+                if grep -q "^${i}" "$path"; then
+                        sed -i "s/^\(${i}[[:space:]]*\).*/\1 ${configs[$i]}/" "$path"
+                else
+                        echo "${i} ${configs[$i]}" >> "$path"
+                fi
+        done
+}
