@@ -27,3 +27,5 @@ function update_user_configs {
                 fi
         done
 }
+
+update_user_configs
