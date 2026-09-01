@@ -7,25 +7,34 @@ if [[ $EUID -ne 0 ]]; then
         exit 1
 fi
 
-Add-User() {
+while true; do
+        read -r -p "Enter a username: " user_name
 
-        local username="$1"
-
-        local password
-        password="${RANDOM}${RANDOM}"
-
-        if [[ -z "$username" ]]; then
-                echo "Username not provided"
-                echo "Usage: $0 <username>"
-                exit 1
+        if [[ -n "$user_name" ]]; then
+                break
         fi
+
+        echo "Please provide username"
+done
+
+password="${RANDOM}${RANDOM}"
+
+function Validate-User() {
+
+        local username=$1
 
         if id "$username" &>/dev/null; then
-                echo "User '$username' already exits"
+                echo "User '$username' already exists"
                 exit 1
         fi
+}
 
-        if ! useradd -m -c "User: $username" "$username"; then
+function Add-User() {
+
+        local username="$1"
+        local password="$2"
+
+        if ! useradd -m "$username"; then
                 echo "Failed to create user."
                 exit 1
         fi
@@ -39,6 +48,5 @@ Add-User() {
         echo "User '$username' password is: $password"
 }
 
-Add-User "$1"
-
-
+Validate-User "$user_name"
+Add-User "$user_name" "$password"
