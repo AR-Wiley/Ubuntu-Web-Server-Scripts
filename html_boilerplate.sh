@@ -2,27 +2,14 @@
 
 set -euo pipefail
 
-echo "This script will create an standard HTML, CSS, and JS boilerplate."
-echo "Input in what you want to name the file and directory"
+dir="website"
 
-while true; do
-        read -r -p "Name HTML file: " html_file
+files=("index.html" "index.css" "index.js")
 
-        if [[ -n "$html_file" ]]; then
-                break
-        fi
 
-        echo "Please provide HTML file name"
+function create_files {
 
-done
-
-while true; do
-        read -r -p "Name of Directory: " html_dir
-
-        if [[ -n "$html_dir" ]]; then
-                break
-        fi
-
-        "Please provide Directory name for files"
-done
-
+        for file in "${files[@]}"; do
+                touch /website/$file
+        done
+}
