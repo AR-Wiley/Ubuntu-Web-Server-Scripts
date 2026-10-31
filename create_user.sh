@@ -2,24 +2,15 @@
 
 set -euo pipefail
 
-if [[ $EUID -ne 0 ]]; then
-        echo "You must be root to run this script"
-        exit 1
-fi
+function validate_root() {
 
-while true; do
-        read -r -p "Enter a username: " user_name
-
-        if [[ -n "$user_name" ]]; then
-                break
+        if [[ $EUID -ne 0 ]]; then
+                echo "This script must run as root" >&2
+                exit 1
         fi
+}
 
-        echo "Please provide username"
-done
-
-password="${RANDOM}${RANDOM}"
-
-function Validate-User() {
+function validate_user() {
 
         local username=$1
 
@@ -29,7 +20,7 @@ function Validate-User() {
         fi
 }
 
-function Add-User() {
+function add_user() {
 
         local username="$1"
         local password="$2"
@@ -48,5 +39,24 @@ function Add-User() {
         echo "User '$username' password is: $password"
 }
 
-Validate-User "$user_name"
-Add-User "$user_name" "$password"
+function main() {
+        while true; do
+                read -r -p "Enter a username: " user_name
+
+                if [[ -n "$user_name" ]]; then
+                        break
+                fi
+
+                echo "Please provide username"
+
+                
+        done
+
+        password=$(openssl rand -base64 16)
+
+        Validate-User "$user_name"
+        Add-User "$user_name" "$password"
+}
+
+main "$@"
+
