@@ -47,9 +47,7 @@ function main() {
                         break
                 fi
 
-                echo "Please provide username"
-
-                
+                echo "Please provide username"                
         done
 
         password=$(openssl rand -base64 16)
