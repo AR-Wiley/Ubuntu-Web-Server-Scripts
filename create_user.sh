@@ -40,6 +40,9 @@ function add_user() {
 }
 
 function main() {
+
+        validate_root
+        
         while true; do
                 read -r -p "Enter a username: " user_name
 
@@ -52,8 +55,8 @@ function main() {
 
         password=$(openssl rand -base64 16)
 
-        Validate-User "$user_name"
-        Add-User "$user_name" "$password"
+        validate_user "$user_name"
+        add_user "$user_name" "$password"
 }
 
 main "$@"
