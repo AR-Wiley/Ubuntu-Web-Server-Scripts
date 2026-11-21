@@ -2,17 +2,20 @@
 
 set -euo pipefail
 
-if [[ $EUID -ne 0 ]]; then
-        echo "This script must be run as root" >&2
-        exit 1
-fi
-
 dir="/var/log/Install_Logs"
 file="/var/log/Install_Logs/install"
 timestamp=$(date +"%Y-%m-%d")
 
 packages=("php-mysql" "php-xml" "php-curl" "php-mbstring" "php-zip")
 updates=("apt-get update" "apt-get upgrade -y" "apt-get dist-upgrade -y" "apt-get clean" "apt-get autoremove -y")
+
+function validate_root {
+
+        if [[ $EUID -ne 0 ]]; then
+                echo "This script must run as root" >&2
+                exit 1
+        fi
+}
 
 function validate_log_path {
 
@@ -113,6 +116,7 @@ function verfiy_php_modules {
         done
 }
 
+validate_root
 validate_log_path
 validate_log_file
 run_updates
